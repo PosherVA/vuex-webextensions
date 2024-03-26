@@ -2,6 +2,7 @@
  *  Copyright 2018 - 2019 Mitsuha Kitsune <https://mitsuhakitsune.com>
  *  Licensed under the MIT license.
  */
+/* eslint-disable */
 
 import Logger from './logger';
 
@@ -35,7 +36,7 @@ class ContentScript {
     });
 
     // Hook actions (Vuex version >= 2.5.0)
-    if (this.settings.syncActions == true) {
+    if (this.settings.syncActions === true) {
       try {
         Logger.verbose(`Listening for actions`);
         this.store.subscribeAction((action) => {
@@ -141,18 +142,18 @@ class ContentScript {
     }
 
     // If received mutations list are empty it's own mutation, send to background
-    if (!this.receivedMutations.length) {
-      return this.sendMutation(mutation);
+    if (this.receivedMutations.length === 0) {
+      this.sendMutation(mutation);
+      return;
     }
 
     // Check if it's received mutation, if it's just ignore it, if not send to background
-    for (var i = this.receivedMutations.length - 1; i >= 0; i--) {
-      if (this.receivedMutations[i].type == mutation.type && this.receivedMutations[i].payload == mutation.payload) {
-        Logger.verbose(`Mutation ${this.receivedMutations[i].type} it's received mutation, don't send to background again`);
-        this.receivedMutations.splice(i, 1);
-      } else if (i == 0) {
-        this.sendMutation(mutation);
-      }
+    const index = this.receivedMutations.findIndex((m) => m.type === mutation.type && JSON.stringify(m.payload) === JSON.stringify(mutation.payload));
+    if (index !== -1) {
+      Logger.verbose(`Mutation ${this.receivedMutations[index].type} it's received mutation, don't send to background again`);
+      this.receivedMutations.splice(index, 1);
+    } else {
+      this.sendMutation(mutation);
     }
   }
 
@@ -179,18 +180,18 @@ class ContentScript {
     }
 
     // If received actions list are empty it's own action, send to background
-    if (!this.receivedActions.length) {
-      return this.sendAction(action);
+    if (this.receivedActions.length === 0) {
+      this.sendAction(action);
+      return;
     }
 
     // Check if it's received action, if it's just ignore it, if not send to background
-    for (var i = this.receivedActions.length - 1; i >= 0; i--) {
-      if (this.receivedActions[i].type == action.type && this.receivedActions[i].payload == action.payload) {
-        Logger.verbose(`Action ${this.receivedActions[i].type} it's received action, don't send to background again`);
-        this.receivedActions.splice(i, 1);
-      } else if (i == 0) {
-        this.sendAction(action);
-      }
+    const index = this.receivedActions.findIndex((a) => a.type === action.type && JSON.stringify(a.payload) === JSON.stringify(action.payload));
+    if (index !== -1) {
+      Logger.verbose(`Action ${this.receivedActions[index].type} it's received action, don't send to background again`);
+      this.receivedActions.splice(index, 1);
+    } else {
+      this.sendAction(action);
     }
   }
 
@@ -231,16 +232,13 @@ class ContentScript {
 
     if (!this.pendingMutations.length) {
       Logger.info(`The pending mutations list are empty`);
-
       return;
     }
 
-    for (var i = 0; i < this.pendingMutations.length; i++) {
-      Logger.verbose(`Processing pending mutation (${this.pendingMutations[i].type}) with payload: ${this.pendingMutations[i].payload}`);
-      this.store.commit(this.pendingMutations[i].type, this.pendingMutations[i].payload);
-
-      // Clean the pending mutation when are applied
-      this.pendingMutations.splice(i, 1);
+    while (this.pendingMutations.length > 0) {
+      const mutation = this.pendingMutations.shift();
+      Logger.verbose(`Processing pending mutation (${mutation.type}) with payload: ${mutation.payload}`);
+      this.store.commit(mutation.type, mutation.payload);
     }
   }
 
@@ -253,16 +251,13 @@ class ContentScript {
 
     if (!this.pendingActions.length) {
       Logger.info(`The pending actions list are empty`);
-
       return;
     }
 
-    for (var i = 0; i < this.pendingActions.length; i++) {
-      Logger.verbose(`Processing pending action (${this.pendingActions[i].type}) with payload: ${this.pendingActions[i].payload}`);
-      this.store.dispatch(this.pendingActions[i].type, this.pendingActions[i].payload);
-
-      // Clean the pending action when are applied
-      this.pendingActions.splice(i, 1);
+    while (this.pendingActions.length > 0) {
+      const action = this.pendingActions.shift();
+      Logger.verbose(`Processing pending action (${action.type}) with payload: ${action.payload}`);
+      this.store.dispatch(action.type, action.payload);
     }
   }
 }

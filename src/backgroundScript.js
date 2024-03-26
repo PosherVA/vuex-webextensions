@@ -2,6 +2,7 @@
  *  Copyright 2018 - 2019 Mitsuha Kitsune <https://mitsuhakitsune.com>
  *  Licensed under the MIT license.
  */
+/* eslint-disable */
 
 import Logger from './logger';
 import { filterObject } from './utils';
@@ -15,7 +16,7 @@ class BackgroundScript {
 
     // Restore persistent state datas from localstorage
     if (this.settings.persistentStates.length) {
-      Logger.info(`Persistent states detected on config, reading from localstorage...`);
+      Logger.info(`Persistent states detected on config, reading from storage...`);
 
       this.browser.getPersistentStates().then((savedStates) => {
         if (savedStates !== null) {
@@ -30,7 +31,7 @@ class BackgroundScript {
           if (this.connections.length > 0) {
             Logger.info(`Sending initial state to other contexts...`);
 
-            for (var i = this.connections.length - 1; i >= 0; i--) {
+            for (let i = this.connections.length - 1; i >= 0; i--) {
               this.syncCurrentState(this.connections[i]);
             }
           }
@@ -51,29 +52,39 @@ class BackgroundScript {
         return;
       }
 
-      // Send mutation to connections pool
-      for (var i = this.connections.length - 1; i >= 0; i--) {
-        // If received mutations list of connection is empty isn't his mutation, send it
-        if (!this.connections[i].receivedMutations.length) {
-          this.sendMutation(this.connections[i], mutation);
+      // refactored code version
+      // Send mutation to all connections
+      this.connections.forEach((connection) => {
+        // Skip connections not related to vuex-webextensions and without a valid name
+        if (typeof connection.name !== 'string' || !connection.name.includes('vuex-webextensions')) {
+          // Logger.debug(`Connection is missing a valid name or is not a vuex-webextensions connection, skip`);
+          return;
         }
 
-        // Check if is one of his mutations
-        for (var j = this.connections[i].receivedMutations.length - 1; j >= 0; j--) {
-          if (this.connections[i].receivedMutations[j].type == mutation.type && this.connections[i].receivedMutations[j].payload == mutation.payload) {
-            this.connections[i].receivedMutations.splice(j, 1);
-          } else if (i == 0) {
-            this.sendMutation(this.connections[i], mutation);
+        let shouldSend = true;
+
+        // Check if the mutation was received from this connection
+        for (let j = connection.receivedMutations.length - 1; j >= 0; j--) {
+          if (connection.receivedMutations[j].type === mutation.type && JSON.stringify(connection.receivedMutations[j].payload) === JSON.stringify(mutation.payload)) {
+            // If it matches, remove it from the list and don't send it back
+            connection.receivedMutations.splice(j, 1);
+            shouldSend = false;
+            break;
           }
         }
-      }
+
+        // If the mutation should be sent, send it
+        if (shouldSend) {
+          this.sendMutation(connection, mutation);
+        }
+      });
 
       // Save persistent states to local storage
-      browser.savePersistentStates(filterObject(this.store.state, this.settings.persistentStates));
+      this.browser.savePersistentStates(filterObject(this.store.state, this.settings.persistentStates));
     });
 
     // Hook actions (Vuex version => 2.5.0)
-    if (this.settings.syncActions == true) {
+    if (this.settings.syncActions === true) {
       try {
         Logger.verbose(`Listening for actions`);
 
@@ -87,22 +98,32 @@ class BackgroundScript {
             return;
           }
 
+          // refactored code version
           // Send action to connections pool
-          for (var i = this.connections.length - 1; i >= 0; i--) {
-            // If received actions list of connection is empty isn't his action, send it
-            if (!this.connections[i].receivedActions.length) {
-              this.sendAction(this.connections[i], action);
+          this.connections.forEach((connection) => {
+            // Skip connections not related to vuex-webextensions and without a valid name
+            if (typeof connection.name !== 'string' || !connection.name.includes('vuex-webextensions')) {
+              // Logger.debug(`Connection ${connection.name} is not a vuex-webextensions connection, skip`);
+              return;
             }
 
-            // Check if is one of his actions
-            for (var j = this.connections[i].receivedActions.length - 1; j >= 0; j--) {
-              if (this.connections[i].receivedActions[j].type == action.type) {
-                this.connections[i].receivedActions.splice(j, 1);
-              } else if (i == 0) {
-                this.sendAction(this.connections[i], action);
+            let shouldSend = true;
+
+            // Check if the action was received from this connection
+            for (let j = connection.receivedActions.length - 1; j >= 0; j--) {
+              if (connection.receivedActions[j].type === action.type) {
+                // If it matches, remove it from the list and don't send it back
+                connection.receivedActions.splice(j, 1);
+                shouldSend = false;
+                break;
               }
             }
-          }
+
+            // If the action should be sent, send it
+            if (shouldSend) {
+              this.sendAction(connection, action);
+            }
+          });
         });
       } catch (err) {
         Logger.info(`Can't sync actions because isn't available in your Vuex version, use Vuex v2.5.0 or later for this feature`);
@@ -110,7 +131,7 @@ class BackgroundScript {
     }
 
     // Start listening for connections
-    browser.handleConnection((connection) => {
+    this.browser.handleConnection((connection) => {
       this.onConnection(connection);
     });
   }
@@ -138,7 +159,7 @@ class BackgroundScript {
   }
 
   onDisconnect(connection) {
-    for (var i = this.connections.length - 1; i >= 0; i--) {
+    for (let i = this.connections.length - 1; i >= 0; i--) {
       if (this.connections[i].name === connection.name) {
         this.connections.splice(i, 1);
       }

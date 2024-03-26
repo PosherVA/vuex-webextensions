@@ -56,15 +56,15 @@ class Browser {
   isBackgroundScript(script) {
     return new Promise((resolve) => {
       try {
-        if (this.browser == browsers.chrome) {
+        if (this.browser === browsers.chrome) {
           chrome.runtime.getBackgroundPage(function(backgroundPage) {
             return resolve(script === backgroundPage);
           });
-        } else if (this.browser == browsers.firefox) {
+        } else if (this.browser === browsers.firefox) {
           browser.runtime.getBackgroundPage().then(function(backgroundPage) {
             return resolve(script === backgroundPage);
           });
-        } else if (this.browser == browsers.edge) {
+        } else if (this.browser === browsers.edge) {
           browser.runtime.getBackgroundPage(function(backgroundPage) {
             return resolve(script === backgroundPage);
           });
@@ -80,7 +80,7 @@ class Browser {
   getPersistentStates() {
     return new Promise((resolve, reject) => {
       try {
-        if (this.browser == browsers.chrome) {
+        if (this.browser === browsers.chrome) {
           chrome.storage.local.get('@@vwe-persistence', function(data) {
             if (data['@@vwe-persistence']) {
               return resolve(data['@@vwe-persistence']);
@@ -88,7 +88,7 @@ class Browser {
 
             return resolve(null);
           });
-        } else if (this.browser == browsers.firefox) {
+        } else if (this.browser === browsers.firefox) {
           browser.storage.local.get('@@vwe-persistence').then(function(data) {
             if (data['@@vwe-persistence']) {
               return resolve(data['@@vwe-persistence']);
@@ -96,7 +96,7 @@ class Browser {
 
             return resolve(null);
           });
-        } else if (this.browser == browsers.edge) {
+        } else if (this.browser === browsers.edge) {
           browser.storage.local.get('@@vwe-persistence', function(data) {
             if (data['@@vwe-persistence']) {
               return resolve(data['@@vwe-persistence']);
@@ -114,7 +114,7 @@ class Browser {
   }
 
   savePersistentStates(datas) {
-    if (this.browser == browsers.chrome) {
+    if (this.browser === browsers.chrome) {
       try {
         chrome.storage.local.set({
           '@@vwe-persistence': datas
@@ -122,7 +122,7 @@ class Browser {
       } catch (err) {
         Logger.error(`Can't write persistent states to local storage. Did you grant storage permission to your WebExtension?`);
       }
-    } else if (this.browser == browsers.firefox) {
+    } else if (this.browser === browsers.firefox) {
       try {
         browser.storage.local.set({
           '@@vwe-persistence': datas
@@ -130,7 +130,7 @@ class Browser {
       } catch (err) {
         Logger.error(`Can't write persistent states to local storage. Did you grant storage permission to your WebExtension?`);
       }
-    } else if (this.browser == browsers.edge) {
+    } else if (this.browser === browsers.edge) {
       try {
         browser.storage.local.set({
           '@@vwe-persistence': datas
@@ -142,7 +142,7 @@ class Browser {
   }
 
   handleConnection(callback) {
-    if (this.browser == browsers.chrome) {
+    if (this.browser === browsers.chrome) {
       return chrome.runtime.onConnect.addListener(callback);
     }
 
@@ -150,7 +150,7 @@ class Browser {
   }
 
   connectToBackground(connectionName) {
-    if (this.browser == browsers.chrome) {
+    if (this.browser === browsers.chrome) {
       return chrome.runtime.connect({
         name: connectionName
       });
