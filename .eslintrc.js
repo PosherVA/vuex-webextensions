@@ -9,6 +9,9 @@ module.exports = {
     sourceType: 'module',
     ecmaVersion: 2018
   },
+  globals: {
+    ServiceWorkerGlobalScope: 'readonly'
+  },
   rules: {
     'accessor-pairs': 'error',
     'array-bracket-newline': 'error',
