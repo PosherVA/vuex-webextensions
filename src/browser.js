@@ -57,9 +57,24 @@ class Browser {
     return new Promise((resolve) => {
       try {
         if (this.browser === browsers.chrome) {
-          chrome.runtime.getBackgroundPage(function(backgroundPage) {
-            return resolve(script === backgroundPage);
-          });
+          // Get the manifest version
+          const manifestData = chrome.runtime.getManifest();
+          const manifestVersion = manifestData.manifest_version;
+
+          Logger.info(`Manifest version: ${manifestVersion}`);
+
+          if (manifestVersion === 2) {
+            // Manifest v2
+            chrome.runtime.getBackgroundPage(function(backgroundPage) {
+              return resolve(script === backgroundPage);
+            });
+          } else if (manifestVersion === 3) {
+            // Manifest v3
+            return 'ServiceWorkerGlobalScope' in self && self instanceof ServiceWorkerGlobalScope;
+          } else {
+            Logger.info('Unknown manifest version');
+          }
+
         } else if (this.browser === browsers.firefox) {
           browser.runtime.getBackgroundPage().then(function(backgroundPage) {
             return resolve(script === backgroundPage);
