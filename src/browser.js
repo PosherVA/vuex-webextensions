@@ -70,11 +70,10 @@ class Browser {
             });
           } else if (manifestVersion === 3) {
             // Manifest v3
-            return 'ServiceWorkerGlobalScope' in self && self instanceof ServiceWorkerGlobalScope;
+            return resolve('ServiceWorkerGlobalScope' in self && self instanceof ServiceWorkerGlobalScope);
           } else {
             Logger.info('Unknown manifest version');
           }
-
         } else if (this.browser === browsers.firefox) {
           browser.runtime.getBackgroundPage().then(function(backgroundPage) {
             return resolve(script === backgroundPage);
